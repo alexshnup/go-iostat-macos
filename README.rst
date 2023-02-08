@@ -1,7 +1,7 @@
 Overview
 --------
 
-Extended iostat for MacOS based github.com/lufia/iostat with CGO
+Extended iostat for MacOS based https://github.com/lufia/iostat with CGO Apple API calls
 
 Available args:
 iostat [delay] [count] [disk]
