@@ -20,7 +20,7 @@ var (
 	disk            string
 	count           int64 = -1
 	wait            int64 = -1
-	curr            int   = 0
+	curr            int   = -1
 	xtended         bool
 	short           bool
 	err             error
@@ -106,6 +106,7 @@ func main() {
 
 	if wait == -1 && count == -1 {
 		count = 0
+		wait = 1
 	}
 
 	for i := 0; i <= int(count)+1; i++ {
@@ -135,6 +136,9 @@ func iostatGetInfo() {
 	for i, dstat := range dstats {
 		if previousDriveStats[dstat.Name] != nil {
 
+			//calculate the difference between current and previous and speed change
+			calculateDriveStats(dstat)
+
 			if disk != "" && disk != dstat.Name {
 				continue
 			}
@@ -156,9 +160,6 @@ func iostatGetInfo() {
 				linePageCount = 0
 			}
 			linePageCount++
-
-			//calculate the difference between current and previous and speed change
-			calculateDriveStats(dstat)
 
 			if short {
 				fmt.Printf("%s\t         %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n", dstat.Name, MB_read_s, MB_wrtn_s, read_s, wrtn_s, T_read_s, T_wrtn_s)
@@ -189,7 +190,6 @@ func calculateDriveStats(dstat *iostat.DriveStats) {
 	MB_wrtn_s = (float64(dstat.BytesWritten-previousDriveStats[dstat.Name].BytesWritten) / 1024 / 1024) / time.Since(timeOfLastUpdate).Seconds()
 	read_s = float64(dstat.NumRead-previousDriveStats[dstat.Name].NumRead) / time.Since(timeOfLastUpdate).Seconds()
 	wrtn_s = float64(dstat.NumWrite-previousDriveStats[dstat.Name].NumWrite) / time.Since(timeOfLastUpdate).Seconds()
-	//convert to milliseconds
 	T_read_s = float64(dstat.TotalReadTime-previousDriveStats[dstat.Name].TotalReadTime) / 1000000000
 	T_wrtn_s = float64(dstat.TotalWriteTime-previousDriveStats[dstat.Name].TotalWriteTime) / 1000000000
 	R_lat_ms = float64(dstat.ReadLatency - previousDriveStats[dstat.Name].ReadLatency)
