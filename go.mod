@@ -1,6 +1,6 @@
 module iostat
 
-go 1.20
+go 1.14
 
 require (
 	github.com/lufia/iostat v1.2.1
