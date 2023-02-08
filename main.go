@@ -80,7 +80,7 @@ func main() {
 			if cCtx.Args().Get(0) != "" {
 				wait, err = strconv.ParseInt(cCtx.Args().Get(0), 10, 64)
 				if err != nil {
-					wait = 0
+					wait = 1
 					count = 0
 					disk = cCtx.Args().Get(0)
 				}
@@ -136,6 +136,7 @@ func iostatGetInfo() {
 	}
 
 	for i, dstat := range dstats {
+
 		if previousDriveStats[dstat.Name] != nil {
 
 			//calculate the difference between current and previous and speed change
@@ -147,10 +148,10 @@ func iostatGetInfo() {
 
 			if !headerIsPrinted {
 				//Print header
-				if short {
-					fmt.Printf("\nDevice:            MB_read/s MB_wrtn/s  #_read/s  #_wrtn/s  T_read/ms  T_wrtn/ms   utils\n\n")
+				if xtended {
+					fmt.Printf("Device:            MB_read/s MB_wrtn/s  #_read/s  #_wrtn/s  T_read/ms  T_wrtn/ms  R_lat(ms)  W_lat(ms)  #_r_err    #_w_err    #_r_retr    #_w_retr    MB_idle_s    utils\n\n")
 				} else {
-					fmt.Printf("\nDevice:            MB_read/s MB_wrtn/s  #_read/s  #_wrtn/s  T_read/ms  T_wrtn/ms  R_lat(ms)  W_lat(ms)  #_r_err    #_w_err    #_r_retr    #_w_retr    MB_idle_s    utils\n\n")
+					fmt.Printf("Device:            MB_read/s MB_wrtn/s  #_read/s  #_wrtn/s  T_read/ms  T_wrtn/ms   utils\n\n")
 				}
 
 				headerIsPrinted = true
@@ -163,18 +164,20 @@ func iostatGetInfo() {
 			}
 			linePageCount++
 
-			if short {
-				fmt.Printf("%s\t         %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n", dstat.Name, MB_read_s, MB_wrtn_s, read_s, wrtn_s, T_read_s, T_wrtn_s, utils)
-			} else {
+			if xtended {
 				fmt.Printf("%s\t         %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %10.2f %10.2f %10.2f %10.2f %11.2f %11.2f %11.2f %11.2f\n", dstat.Name, MB_read_s, MB_wrtn_s, read_s, wrtn_s, T_read_s, T_wrtn_s, R_lat_ms, W_lat_ms, r_err, w_err, r_retr, w_retr, MB_idle_s, utils)
+			} else {
+				fmt.Printf("%s\t         %9.2f %9.2f %9.2f %9.2f %9.2f %10.2f %10.2f\n", dstat.Name, MB_read_s, MB_wrtn_s, read_s, wrtn_s, T_read_s, T_wrtn_s, utils)
+
 			}
+
 		}
 
 		//save current dsstat to previousDriveStats
 		previousDriveStats[dstat.Name] = dstat
 
 		//print new line after last drive
-		if i == len(dstats)-1 && curr < int(count)+1 {
+		if i == len(dstats)-1 && curr < int(count)+1 && disk == "" {
 			fmt.Printf("\n")
 		}
 
