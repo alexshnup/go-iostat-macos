@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"runtime"
 	"strconv"
@@ -25,9 +26,10 @@ var (
 	short           bool
 	err             error
 )
-var MB_read_s, MB_wrtn_s, read_s, wrtn_s, T_read_s, T_wrtn_s, R_lat_ms, W_lat_ms, r_err, w_err, r_retr, w_retr float64
+var MB_read_s, MB_wrtn_s, read_s, wrtn_s, T_read_s, T_wrtn_s, R_lat_ms, W_lat_ms, r_err, w_err, r_retr, w_retr, utils, MB_idle_s float64
 
 var previousDriveStats map[string]*iostat.DriveStats = make(map[string]*iostat.DriveStats)
+var previousMBidleDisk map[string]float64 = make(map[string]float64)
 var timeOfLastUpdate time.Time
 
 func main() {
@@ -136,25 +138,24 @@ func iostatGetInfo() {
 	for i, dstat := range dstats {
 		if previousDriveStats[dstat.Name] != nil {
 
+			//calculate the difference between current and previous and speed change
+			calculateDriveStats(dstat)
+
 			if disk != "" && disk != dstat.Name {
 				continue
 			}
-			
-			
-			//calculate the difference between current and previous and speed change
-			calculateDriveStats(dstat)
 
 			if !headerIsPrinted {
 				//Print header
 				if short {
-					fmt.Printf("\nDevice:            MB_read/s MB_wrtn/s  #_read/s  #_wrtn/s  T_read/ms  T_wrtn/ms\n\n")
+					fmt.Printf("\nDevice:            MB_read/s MB_wrtn/s  #_read/s  #_wrtn/s  T_read/ms  T_wrtn/ms   utils\n\n")
 				} else {
-					fmt.Printf("\nDevice:            MB_read/s MB_wrtn/s  #_read/s  #_wrtn/s  T_read/ms  T_wrtn/ms  R_lat(ms)  W_lat(ms)  #_r_err    #_w_err    #_r_retr    #_w_retr\n\n")
+					fmt.Printf("\nDevice:            MB_read/s MB_wrtn/s  #_read/s  #_wrtn/s  T_read/ms  T_wrtn/ms  R_lat(ms)  W_lat(ms)  #_r_err    #_w_err    #_r_retr    #_w_retr    MB_idle_s    utils\n\n")
 				}
 
 				headerIsPrinted = true
 			}
-		
+
 			//make header is printed every pageSize lines
 			if linePageCount > pageSize {
 				headerIsPrinted = false
@@ -163,9 +164,9 @@ func iostatGetInfo() {
 			linePageCount++
 
 			if short {
-				fmt.Printf("%s\t         %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n", dstat.Name, MB_read_s, MB_wrtn_s, read_s, wrtn_s, T_read_s, T_wrtn_s)
+				fmt.Printf("%s\t         %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n", dstat.Name, MB_read_s, MB_wrtn_s, read_s, wrtn_s, T_read_s, T_wrtn_s, utils)
 			} else {
-				fmt.Printf("%s\t         %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %10.2f %10.2f %10.2f %10.2f %11.2f %11.2f\n", dstat.Name, MB_read_s, MB_wrtn_s, read_s, wrtn_s, T_read_s, T_wrtn_s, R_lat_ms, W_lat_ms, r_err, w_err, r_retr, w_retr)
+				fmt.Printf("%s\t         %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %10.2f %10.2f %10.2f %10.2f %11.2f %11.2f %11.2f %11.2f\n", dstat.Name, MB_read_s, MB_wrtn_s, read_s, wrtn_s, T_read_s, T_wrtn_s, R_lat_ms, W_lat_ms, r_err, w_err, r_retr, w_retr, MB_idle_s, utils)
 			}
 		}
 
@@ -199,5 +200,18 @@ func calculateDriveStats(dstat *iostat.DriveStats) {
 	w_err = float64(dstat.WriteErrors - previousDriveStats[dstat.Name].WriteErrors)
 	r_retr = float64(dstat.ReadRetries - previousDriveStats[dstat.Name].ReadRetries)
 	w_retr = float64(dstat.WriteRetries - previousDriveStats[dstat.Name].WriteRetries)
+
+	MB_idle_s = 1000 - (MB_read_s + MB_wrtn_s)
+	previousMBidleDisk[dstat.Name] = MB_idle_s
+
+	//calculate utils in %
+	utils = 100 * (T_read_s + T_wrtn_s) / (T_read_s + T_wrtn_s + (MB_idle_s / 1024))
+
+	if utils > 100 {
+		utils = 100
+	}
+	if math.IsNaN(math.Log(utils)) {
+		utils = 0
+	}
 
 }
