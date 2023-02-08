@@ -136,12 +136,13 @@ func iostatGetInfo() {
 	for i, dstat := range dstats {
 		if previousDriveStats[dstat.Name] != nil {
 
-			//calculate the difference between current and previous and speed change
-			calculateDriveStats(dstat)
-
 			if disk != "" && disk != dstat.Name {
 				continue
 			}
+			
+			
+			//calculate the difference between current and previous and speed change
+			calculateDriveStats(dstat)
 
 			if !headerIsPrinted {
 				//Print header
@@ -153,7 +154,7 @@ func iostatGetInfo() {
 
 				headerIsPrinted = true
 			}
-
+		
 			//make header is printed every pageSize lines
 			if linePageCount > pageSize {
 				headerIsPrinted = false
