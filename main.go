@@ -46,7 +46,8 @@ func main() {
 		// println("width:", width, "height:", height)
 		pageSize = int64(height) / 2
 	} else {
-		println("not in a term")
+		// println("not in a term")
+		//zabbix agent is not in a term))
 	}
 
 	app := &cli.App{
