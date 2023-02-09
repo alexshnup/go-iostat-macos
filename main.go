@@ -22,6 +22,7 @@ var (
 	count           int64 = -1
 	wait            int64 = -1
 	curr            int   = -1
+	justShowDisks   bool  = false
 	xtended         bool
 	short           bool
 	err             error
@@ -29,7 +30,6 @@ var (
 var MB_read_s, MB_wrtn_s, read_s, wrtn_s, T_read_s, T_wrtn_s, R_lat_ms, W_lat_ms, r_err, w_err, r_retr, w_retr, utils, MB_idle_s float64
 
 var previousDriveStats map[string]*iostat.DriveStats = make(map[string]*iostat.DriveStats)
-var previousMBidleDisk map[string]float64 = make(map[string]float64)
 var timeOfLastUpdate time.Time
 
 func main() {
@@ -62,6 +62,11 @@ func main() {
 				Name:        "d",
 				Usage:       "short",
 				Destination: &short,
+			},
+			&cli.BoolFlag{
+				Name:        "j",
+				Usage:       "Jut show the disks, no wait statistics",
+				Destination: &justShowDisks,
 			},
 		},
 		ArgsUsage: string("wait count"),
@@ -116,8 +121,9 @@ func main() {
 		if wait > 0 && count == -1 {
 			i = -1
 		}
+
 		//exclude the last iteration
-		if i < int(count)+1 {
+		if i < int(count)+1 && !justShowDisks {
 			time.Sleep(time.Duration(wait) * time.Second)
 		}
 
@@ -204,8 +210,7 @@ func calculateDriveStats(dstat *iostat.DriveStats) {
 	r_retr = float64(dstat.ReadRetries - previousDriveStats[dstat.Name].ReadRetries)
 	w_retr = float64(dstat.WriteRetries - previousDriveStats[dstat.Name].WriteRetries)
 
-	MB_idle_s = 1000 - (MB_read_s + MB_wrtn_s)
-	previousMBidleDisk[dstat.Name] = MB_idle_s
+	MB_idle_s = 100 - (MB_read_s + MB_wrtn_s)
 
 	//calculate utils in %
 	utils = 100 * (T_read_s + T_wrtn_s) / (T_read_s + T_wrtn_s + (MB_idle_s / 1024))
